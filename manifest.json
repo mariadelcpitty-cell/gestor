@@ -1,1 +1,21 @@
-{"name": "Gestión de Socios","short_name": "Gestor","description": "Una aplicación simple para gestionar saldos de socios.","start_url": "https://www.google.com/search?q=http://192.168.50.130:8080/gestion.html","display": "standalone","background_color": "#ffffff","theme_color": "#2563eb","icons": [{"src": "/android-chrome-192x192.png","sizes": "192x192","type": "image/png"},{"src": "/android-chrome-512x512.png","sizes": "512x512","type": "image/png"}]}
+{
+  "name": "Gestión de Socios",
+  "short_name": "Gestor",
+  "description": "Una aplicación simple para gestionar saldos de socios.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
