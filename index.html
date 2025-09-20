@@ -6,6 +6,8 @@
     <title>Gestión de Socios</title>
     <!-- Incluir Tailwind CSS desde CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Incluir html2canvas para la conversión a imagen -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         /* Estilos personalizados para un aspecto más de aplicación móvil */
         body {
@@ -73,24 +75,30 @@
 
         <!-- Botones de Acción -->
         <div class="p-4 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
-            <button id="add-partner-btn" class="bg-green-500 text-white font-semibold py-3 px-6 rounded-full shadow-lg hover:bg-green-600 transition transform hover:scale-105 w-full sm:w-auto">
+            <button id="add-partner-btn" class="bg-green-500 text-white font-semibold py-2 px-4 rounded-full shadow-lg hover:bg-green-600 transition transform hover:scale-105 w-full sm:w-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                Agregar Nuevo Socio
+                Agregar Nuevo Cliente
             </button>
-            <button id="general-history-btn" class="bg-indigo-500 text-white font-semibold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-600 transition transform hover:scale-105 w-full sm:w-auto">
+            <button id="general-history-btn" class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-full shadow-lg hover:bg-indigo-600 transition transform hover:scale-105 w-full sm:w-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M12 15h.01" />
                 </svg>
                 Historial General
             </button>
         </div>
+        
+        <!-- Botones de Filtrado -->
+        <div class="p-4 flex justify-center space-x-2">
+            <button id="show-partners-btn" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-blue-600 transition">Mostrar Socios</button>
+            <button id="show-players-btn" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-blue-600 transition">Mostrar Jugadores</button>
+        </div>
 
         <!-- Lista de socios -->
         <section class="p-4">
-            <h3 class="text-lg font-bold text-gray-700 mb-4">Lista de Socios</h3>
-            <div id="partners-list" class="space-y-4">
+            <h3 id="list-title" class="text-lg font-bold text-gray-700 mb-4 hidden">Lista de Clientes</h3>
+            <div id="partners-list" class="space-y-4 hidden">
                 <!-- Las tarjetas de socios se renderizarán aquí -->
             </div>
         </section>
@@ -101,12 +109,19 @@
                 <h3 id="modal-title" class="text-xl font-bold mb-4 text-center text-gray-800"></h3>
                 <form id="partner-form" class="space-y-4">
                     <div>
-                        <label for="partner-name" class="block text-sm font-medium text-gray-700">Nombre del Socio</label>
+                        <label for="partner-name" class="block text-sm font-medium text-gray-700">Nombre del Cliente</label>
                         <input type="text" id="partner-name" name="partner-name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
                     <div>
+                        <label for="partner-type" class="block text-sm font-medium text-gray-700">Tipo de Cliente</label>
+                        <select id="partner-type" name="partner-type" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="socio">Socio</option>
+                            <option value="jugador">Jugador</option>
+                        </select>
+                    </div>
+                    <div>
                         <label for="partner-initial-balance" class="block text-sm font-medium text-gray-700">Saldo Inicial</label>
-                        <input type="number" id="partner-initial-balance" name="partner-initial-balance" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" value="0">
+                        <input type="number" step="0.01" id="partner-initial-balance" name="partner-initial-balance" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" value="0">
                     </div>
                     <div class="flex justify-between items-center space-x-2 pt-4">
                         <button type="button" id="cancel-partner-btn" class="flex-1 bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300 transition">Cancelar</button>
@@ -124,15 +139,15 @@
                 <form id="transaction-form" class="space-y-4">
                     <div>
                         <label for="transaction-amount" class="block text-sm font-medium text-gray-700">Monto</label>
-                        <input type="number" id="transaction-amount" name="transaction-amount" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                        <input type="number" step="0.01" id="transaction-amount" name="transaction-amount" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
                     <div>
                         <label for="transaction-date" class="block text-sm font-medium text-gray-700">Fecha de la Transacción</label>
                         <input type="date" id="transaction-date" name="transaction-date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
-                    <div class="flex justify-between items-center space-x-2 pt-4">
+                    <div class="flex justify-between items-center space-x-2 pt-4" id="transaction-buttons">
                         <button type="button" id="cancel-transaction-btn" class="flex-1 bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300 transition">Cancelar</button>
-                        <button type="submit" id="transaction-btn" class="flex-1 text-white font-semibold py-2 rounded-lg transition"></button>
+                        <!-- Los botones de Entrada y Salida se crearán dinámicamente aquí -->
                     </div>
                 </form>
             </div>
@@ -142,7 +157,7 @@
         <div id="confirm-modal" class="modal-overlay flex">
             <div class="modal-content bg-white p-6 rounded-2xl shadow-xl w-11/12 max-w-sm text-center">
                 <h3 class="text-xl font-bold mb-4 text-gray-800">Confirmar Eliminación</h3>
-                <p class="text-gray-600 mb-6">¿Estás seguro que quieres eliminar a este socio?</p>
+                <p class="text-gray-600 mb-6">¿Estás seguro que quieres eliminar a este cliente?</p>
                 <div class="flex justify-between items-center space-x-4 pt-4">
                     <button id="cancel-delete-btn" class="flex-1 bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300 transition">Cancelar</button>
                     <button id="confirm-delete-btn" class="flex-1 bg-red-600 text-white font-semibold py-2 rounded-lg hover:bg-red-700 transition">Sí, Eliminar</button>
@@ -171,6 +186,7 @@
                     <!-- El historial del socio se renderizará aquí -->
                 </div>
                 <div class="mt-6 text-center">
+                    <button id="share-history-btn" class="bg-blue-500 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-600 transition">Compartir Historial</button>
                     <button id="close-partner-history-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300 transition">Cerrar</button>
                 </div>
             </div>
@@ -182,13 +198,17 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Referencias a los elementos del DOM
             const partnersList = document.getElementById('partners-list');
+            const listTitle = document.getElementById('list-title');
             const totalBalanceEl = document.getElementById('total-balance');
             const addPartnerBtn = document.getElementById('add-partner-btn');
             const generalHistoryBtn = document.getElementById('general-history-btn');
+            const showPartnersBtn = document.getElementById('show-partners-btn');
+            const showPlayersBtn = document.getElementById('show-players-btn');
 
             const partnerModal = document.getElementById('partner-modal');
             const partnerForm = document.getElementById('partner-form');
             const partnerNameInput = document.getElementById('partner-name');
+            const partnerTypeInput = document.getElementById('partner-type');
             const partnerInitialBalanceInput = document.getElementById('partner-initial-balance');
             const cancelPartnerBtn = document.getElementById('cancel-partner-btn');
 
@@ -197,7 +217,7 @@
             const transactionForm = document.getElementById('transaction-form');
             const transactionAmountInput = document.getElementById('transaction-amount');
             const transactionDateInput = document.getElementById('transaction-date');
-            const transactionBtn = document.getElementById('transaction-btn');
+            const transactionButtonsContainer = document.getElementById('transaction-buttons');
             const cancelTransactionBtn = document.getElementById('cancel-transaction-btn');
 
             const confirmModal = document.getElementById('confirm-modal');
@@ -212,11 +232,13 @@
             const partnerHistoryNameEl = document.getElementById('partner-history-name');
             const partnerHistoryList = document.getElementById('partner-history-list');
             const closePartnerHistoryBtn = document.getElementById('close-partner-history-btn');
+            const shareHistoryBtn = document.getElementById('share-history-btn');
 
             // Variables de estado
             let partners = [];
             let transactions = [];
             let currentPartnerId = null;
+            let currentFilter = null; // null para que la lista esté oculta por defecto
 
             // --- Funciones de Lógica de la Aplicación ---
 
@@ -242,19 +264,61 @@
                 localStorage.setItem('transactions', JSON.stringify(transactions));
             };
 
+            const togglePartnerList = (filter) => {
+                const isCurrentlyVisible = !partnersList.classList.contains('hidden');
+                const isSameFilter = currentFilter === filter;
+                
+                // Si la lista está visible y se presiona el mismo botón, ocultarla
+                if (isCurrentlyVisible && isSameFilter) {
+                    partnersList.classList.add('hidden');
+                    listTitle.classList.add('hidden');
+                    currentFilter = null;
+                    showPartnersBtn.textContent = 'Mostrar Socios';
+                    showPlayersBtn.textContent = 'Mostrar Jugadores';
+                } else { // Si la lista está oculta o se presiona un botón diferente
+                    currentFilter = filter;
+                    renderPartners(); // Renderizar con el nuevo filtro
+                    partnersList.classList.remove('hidden');
+                    listTitle.classList.remove('hidden');
+                    
+                    if (filter === 'socio') {
+                        showPartnersBtn.textContent = 'Ocultar Socios';
+                        showPlayersBtn.textContent = 'Mostrar Jugadores';
+                    } else if (filter === 'jugador') {
+                        showPlayersBtn.textContent = 'Ocultar Jugadores';
+                        showPartnersBtn.textContent = 'Mostrar Socios';
+                    }
+                }
+            };
+            
             const renderPartners = () => {
                 partnersList.innerHTML = '';
-                partners.forEach(partner => {
+                let filteredPartners = partners;
+                
+                if (currentFilter === 'socio') {
+                    filteredPartners = partners.filter(p => p.type === 'socio');
+                    listTitle.textContent = 'Lista de Socios';
+                } else if (currentFilter === 'jugador') {
+                    filteredPartners = partners.filter(p => p.type === 'jugador');
+                    listTitle.textContent = 'Lista de Jugadores';
+                }
+                
+                if (filteredPartners.length === 0) {
+                    partnersList.innerHTML = '<p class="text-gray-500 text-center">No hay clientes de este tipo registrados.</p>';
+                }
+                
+                filteredPartners.forEach(partner => {
                     const card = document.createElement('div');
                     card.className = 'partner-card bg-white p-5 rounded-2xl shadow-md flex flex-col sm:flex-row justify-between items-center';
                     card.dataset.id = partner.id;
 
                     const balanceColor = partner.balance >= 0 ? 'text-green-600' : 'text-red-600';
+                    const typeText = partner.type === 'socio' ? 'Socio' : 'Jugador';
                     
                     card.innerHTML = `
                         <div class="mb-4 sm:mb-0">
-                            <p class="text-xl font-semibold text-gray-800">${partner.name}</p>
-                            <p class="text-sm text-gray-500">Saldo: <span class="font-bold ${balanceColor}">$${partner.balance.toFixed(2)}</span></p>
+                            <p class="text-xl font-semibold text-gray-800">${partner.name} <span class="text-sm text-gray-500">(${typeText})</span></p>
+                            <p class="text-sm text-gray-500">Saldo: <span class="font-bold ${balanceColor}">B/.${partner.balance.toFixed(2)}</span></p>
                         </div>
                         <div class="flex items-center space-x-2">
                             <button class="update-balance-btn bg-blue-500 text-white p-2 rounded-full shadow-md hover:bg-blue-600 transition" data-id="${partner.id}">
@@ -281,7 +345,7 @@
 
             const calculateTotalBalance = () => {
                 const total = partners.reduce((sum, partner) => sum + partner.balance, 0);
-                totalBalanceEl.textContent = `$${total.toFixed(2)}`;
+                totalBalanceEl.textContent = `B/.${total.toFixed(2)}`;
                 totalBalanceEl.className = total >= 0 ? 'text-4xl font-extrabold text-blue-600 mt-2' : 'text-4xl font-extrabold text-red-600 mt-2';
             };
 
@@ -315,7 +379,7 @@
 
                 sortedTransactions.forEach(transaction => {
                     const partner = partners.find(p => p.id === transaction.partnerId);
-                    const partnerName = partner ? partner.name : 'Socio Desconocido';
+                    const partnerName = partner ? partner.name : 'Cliente Desconocido';
                     const amountColor = transaction.type === 'entry' ? 'text-green-600' : 'text-red-600';
                     const sign = transaction.type === 'entry' ? '+' : '-';
 
@@ -326,7 +390,7 @@
                             <p class="font-semibold">${partnerName}</p>
                             <p class="text-sm text-gray-500">${new Date(transaction.date).toLocaleDateString()}</p>
                         </div>
-                        <p class="font-bold text-lg ${amountColor}">${sign}$${transaction.amount.toFixed(2)}</p>
+                        <p class="font-bold text-lg ${amountColor}">${sign}B/.${transaction.amount.toFixed(2)}</p>
                     `;
                     generalHistoryList.appendChild(transactionEl);
                 });
@@ -344,8 +408,7 @@
                     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
                 if (partnerTransactions.length === 0) {
-                    partnerHistoryList.innerHTML = '<p class="text-gray-500 text-center">No hay transacciones registradas para este socio.</p>';
-                    return;
+                    partnerHistoryList.innerHTML = '<p class="text-gray-500 text-center">No hay transacciones registradas para este cliente.</p>';
                 }
 
                 partnerTransactions.forEach(transaction => {
@@ -359,10 +422,124 @@
                             <p class="font-semibold">${transaction.type === 'entry' ? 'Entrada' : 'Salida'}</p>
                             <p class="text-sm text-gray-500">${new Date(transaction.date).toLocaleDateString()}</p>
                         </div>
-                        <p class="font-bold text-lg ${amountColor}">${sign}$${transaction.amount.toFixed(2)}</p>
+                        <p class="font-bold text-lg ${amountColor}">${sign}B/.${transaction.amount.toFixed(2)}</p>
                     `;
                     partnerHistoryList.appendChild(transactionEl);
                 });
+            };
+
+            const shareHistoryAsJpg = async (partnerId) => {
+                const partner = partners.find(p => p.id === partnerId);
+                if (!partner) return;
+            
+                // Convertir la imagen base64 a un Blob
+                const dataURItoBlob = (dataURI) => {
+                    const byteString = atob(dataURI.split(',')[1]);
+                    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+                    const ab = new ArrayBuffer(byteString.length);
+                    const ia = new Uint8Array(ab);
+                    for (let i = 0; i < byteString.length; i++) {
+                        ia[i] = byteString.charCodeAt(i);
+                    }
+                    return new Blob([ab], { type: mimeString });
+                };
+            
+                const historyContent = document.createElement('div');
+                historyContent.style.backgroundColor = 'white';
+                historyContent.style.padding = '20px';
+                historyContent.style.width = '350px';
+                historyContent.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                historyContent.style.borderRadius = '1rem';
+                historyContent.style.display = 'flex';
+                historyContent.style.flexDirection = 'column';
+                historyContent.style.gap = '16px';
+                historyContent.style.fontFamily = 'Inter, sans-serif';
+
+                const title = document.createElement('h3');
+                title.textContent = `Historial de ${partner.name}`;
+                title.style.fontSize = '1.25rem';
+                title.style.fontWeight = 'bold';
+                title.style.marginBottom = '1rem';
+                title.style.textAlign = 'center';
+                title.style.color = '#1f2937';
+                historyContent.appendChild(title);
+            
+                const partnerTransactions = transactions
+                    .filter(t => t.partnerId === partnerId)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                if (partnerTransactions.length === 0) {
+                    const noHistory = document.createElement('p');
+                    noHistory.textContent = 'No hay transacciones registradas.';
+                    noHistory.style.textAlign = 'center';
+                    noHistory.style.color = '#9ca3af';
+                    historyContent.appendChild(noHistory);
+                } else {
+                    partnerTransactions.forEach(transaction => {
+                        const amountColor = transaction.type === 'entry' ? '#10b981' : '#ef4444';
+                        const sign = transaction.type === 'entry' ? '+' : '-';
+                        const typeText = transaction.type === 'entry' ? 'Entrada' : 'Salida';
+                        
+                        const transactionEl = document.createElement('div');
+                        transactionEl.style.backgroundColor = '#f9fafb';
+                        transactionEl.style.padding = '1rem';
+                        transactionEl.style.borderRadius = '0.5rem';
+                        transactionEl.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+                        transactionEl.style.display = 'flex';
+                        transactionEl.style.justifyContent = 'space-between';
+                        transactionEl.style.alignItems = 'center';
+
+                        transactionEl.innerHTML = `
+                            <div>
+                                <p style="font-weight: 600;">${typeText}</p>
+                                <p style="font-size: 0.875rem; color: #6b7280;">${new Date(transaction.date).toLocaleDateString()}</p>
+                            </div>
+                            <p style="font-weight: bold; font-size: 1.125rem; color: ${amountColor};">${sign}B/.${transaction.amount.toFixed(2)}</p>
+                        `;
+                        historyContent.appendChild(transactionEl);
+                    });
+                }
+            
+                document.body.appendChild(historyContent);
+                const canvas = await html2canvas(historyContent);
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                historyContent.remove(); // Eliminar el elemento temporal del DOM
+            
+                // Usar la API de compartir si está disponible
+                if (navigator.share && navigator.canShare) {
+                    const imageBlob = dataURItoBlob(imgData);
+                    const filesArray = [new File([imageBlob], `historial_${partner.name}.jpg`, { type: 'image/jpeg' })];
+            
+                    if (navigator.canShare({ files: filesArray })) {
+                        try {
+                            await navigator.share({
+                                files: filesArray,
+                                title: `Historial de Transacciones de ${partner.name}`,
+                                text: `Hola, aquí está tu historial de transacciones de la aplicación de gestión.`,
+                            });
+                        } catch (error) {
+                            console.error('Error al compartir:', error);
+                        }
+                    } else {
+                        // Fallback si no se pueden compartir archivos
+                        console.log('El navegador no puede compartir archivos.');
+                        const link = document.createElement('a');
+                        link.href = imgData;
+                        link.download = `historial_${partner.name}.jpg`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                } else {
+                    // Fallback para navegadores que no soportan la API
+                    console.log('El navegador no soporta la Web Share API.');
+                    const link = document.createElement('a');
+                    link.href = imgData;
+                    link.download = `historial_${partner.name}.jpg`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
             };
 
             // --- Manejadores de Eventos ---
@@ -370,12 +547,14 @@
             const handleAddPartnerSubmit = (e) => {
                 e.preventDefault();
                 const name = partnerNameInput.value.trim();
+                const type = partnerTypeInput.value;
                 const initialBalance = parseFloat(partnerInitialBalanceInput.value) || 0;
 
                 if (name) {
                     const newPartner = {
                         id: Date.now().toString(),
                         name: name,
+                        type: type,
                         balance: initialBalance
                     };
                     partners.push(newPartner);
@@ -386,7 +565,7 @@
                     partnerForm.reset();
                 }
             };
-            
+
             const handleTransactionSubmit = (e) => {
                 e.preventDefault();
                 const amount = parseFloat(transactionAmountInput.value);
@@ -395,14 +574,14 @@
                 if (currentPartnerId && !isNaN(amount) && date) {
                     const partner = partners.find(p => p.id === currentPartnerId);
                     if (partner) {
-                        const transactionType = transactionBtn.dataset.type;
+                        const transactionType = e.submitter.id === 'entry-btn' ? 'entry' : 'exit';
+                        
                         if (transactionType === 'entry') {
                             partner.balance += amount;
                         } else if (transactionType === 'exit') {
                             partner.balance -= amount;
                         }
                         
-                        // Registrar la transacción
                         transactions.push({
                             id: Date.now().toString(),
                             partnerId: partner.id,
@@ -420,9 +599,49 @@
                 }
             };
 
+            const createTransactionButtons = () => {
+                transactionButtonsContainer.innerHTML = '';
+                
+                const cancelButton = document.createElement('button');
+                cancelButton.type = 'button';
+                cancelButton.id = 'cancel-transaction-btn';
+                cancelButton.className = 'flex-1 bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300 transition';
+                cancelButton.textContent = 'Cancelar';
+                cancelButton.addEventListener('click', () => closeModal(transactionModal));
+
+                const entryButton = document.createElement('button');
+                entryButton.type = 'submit';
+                entryButton.id = 'entry-btn';
+                entryButton.className = 'flex-1 bg-green-500 text-white font-semibold py-2 rounded-lg hover:bg-green-600 transition';
+                entryButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Entrada
+                `;
+
+                const exitButton = document.createElement('button');
+                exitButton.type = 'submit';
+                exitButton.id = 'exit-btn';
+                exitButton.className = 'flex-1 bg-red-500 text-white font-semibold py-2 rounded-lg hover:bg-red-600 transition';
+                exitButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                    </svg>
+                    Salida
+                `;
+
+                transactionButtonsContainer.appendChild(cancelButton);
+                transactionButtonsContainer.appendChild(entryButton);
+                transactionButtonsContainer.appendChild(exitButton);
+
+                transactionForm.removeEventListener('submit', handleTransactionSubmit);
+                transactionForm.addEventListener('submit', handleTransactionSubmit);
+            };
+
             // Event listeners
             addPartnerBtn.addEventListener('click', () => {
-                document.getElementById('modal-title').textContent = 'Agregar Nuevo Socio';
+                document.getElementById('modal-title').textContent = 'Agregar Nuevo Cliente';
                 openModal(partnerModal);
                 partnerForm.removeEventListener('submit', handleAddPartnerSubmit);
                 partnerForm.addEventListener('submit', handleAddPartnerSubmit);
@@ -431,6 +650,14 @@
             generalHistoryBtn.addEventListener('click', () => {
                 renderGeneralHistory();
                 openModal(generalHistoryModal);
+            });
+
+            showPartnersBtn.addEventListener('click', () => {
+                togglePartnerList('socio');
+            });
+
+            showPlayersBtn.addEventListener('click', () => {
+                togglePartnerList('jugador');
             });
 
             cancelPartnerBtn.addEventListener('click', () => closeModal(partnerModal));
@@ -446,6 +673,12 @@
                 }
             });
 
+            shareHistoryBtn.addEventListener('click', () => {
+                if (currentPartnerId) {
+                    shareHistoryAsJpg(currentPartnerId);
+                }
+            });
+
             partnersList.addEventListener('click', (e) => {
                 const updateBtn = e.target.closest('.update-balance-btn');
                 const deleteBtn = e.target.closest('.delete-partner-btn');
@@ -455,89 +688,32 @@
                     currentPartnerId = updateBtn.dataset.id;
                     const partner = partners.find(p => p.id === currentPartnerId);
                     if (partner) {
-                        // Establecer la fecha actual en el campo de fecha
                         const today = new Date().toISOString().substring(0, 10);
                         transactionDateInput.value = today;
 
                         transactionPartnerNameEl.textContent = `Actualizando a ${partner.name}`;
+                        createTransactionButtons();
                         openModal(transactionModal);
-
-                        transactionBtn.innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                            Entrada
-                        `;
-                        transactionBtn.className = 'flex-1 bg-green-500 text-white font-semibold py-2 rounded-lg hover:bg-green-600 transition';
-                        transactionBtn.dataset.type = 'entry';
-
-                        const exitBtn = document.createElement('button');
-                        exitBtn.type = 'button';
-                        exitBtn.id = 'exit-btn';
-                        exitBtn.className = 'flex-1 bg-red-500 text-white font-semibold py-2 rounded-lg hover:bg-red-600 transition';
-                        exitBtn.innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-                            </svg>
-                            Salida
-                        `;
-                        exitBtn.dataset.type = 'exit';
-                        
-                        const transactionButtonsContainer = transactionBtn.parentElement;
-                        const existingExitBtn = document.getElementById('exit-btn');
-                        if (existingExitBtn) existingExitBtn.remove();
-                        transactionButtonsContainer.insertBefore(exitBtn, transactionBtn);
-
-                        const handleExitClick = () => {
-                            const amount = parseFloat(transactionAmountInput.value);
-                            const date = transactionDateInput.value;
-                            if (currentPartnerId && !isNaN(amount) && date) {
-                                const partnerToUpdate = partners.find(p => p.id === currentPartnerId);
-                                if (partnerToUpdate) {
-                                    partnerToUpdate.balance -= amount;
-                                    transactions.push({
-                                        id: Date.now().toString(),
-                                        partnerId: partnerToUpdate.id,
-                                        type: 'exit',
-                                        amount: amount,
-                                        date: new Date(date).toISOString()
-                                    });
-                                    saveData();
-                                    renderPartners();
-                                    calculateTotalBalance();
-                                    closeModal(transactionModal);
-                                    transactionForm.reset();
-                                }
-                            }
-                        };
-                        exitBtn.addEventListener('click', handleExitClick);
-                        
-                        transactionForm.removeEventListener('submit', handleTransactionSubmit);
-                        transactionForm.addEventListener('submit', handleTransactionSubmit);
                     }
                 } else if (deleteBtn) {
                     currentPartnerId = deleteBtn.dataset.id;
                     openModal(confirmModal);
                 } else if (historyBtn) {
                     const partnerId = historyBtn.dataset.id;
+                    currentPartnerId = partnerId;
                     renderPartnerHistory(partnerId);
                     openModal(partnerHistoryModal);
                 }
             });
 
-            // Función para asegurarse de que todos los modales estén ocultos al cargar
             const resetModals = () => {
                 const modals = [partnerModal, transactionModal, confirmModal, generalHistoryModal, partnerHistoryModal];
                 modals.forEach(modal => closeModal(modal));
             };
 
-            // Inicializar la aplicación al cargar la página
             loadData();
-            // Llamar a la nueva función para asegurar un inicio limpio
             resetModals();
         });
     </script>
 </body>
 </html>
-
-
